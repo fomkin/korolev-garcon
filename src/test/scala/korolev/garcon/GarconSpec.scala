@@ -214,16 +214,13 @@ object GarconSpec {
 
     object implicits {
       implicit val IntStringGarcon: Garcon[IO, Int, String, String] =
-        (query: Int, modify: Demand[Int, String, String] => IO[Unit]) =>
-          modify(Demand.Ready(query.toString))
+        (query, modify) => modify(Demand.Ready(query.toString))
 
       implicit val StringStringGarcon: Garcon[IO, String, String, String] =
-        (query: String, modify: Demand[String, String, String] => IO[Unit]) =>
-          modify(Demand.Ready(query + "!"))
+        (query, modify) => modify(Demand.Ready(query + "!"))
 
       implicit val IntIntGarcon: Garcon[IO, Int, Int, String] =
-        (query: Int, modify: Demand[Int, Int, String] => IO[Unit]) =>
-          modify(Demand.Ready(query * 2))
+        (query, modify) => modify(Demand.Ready(query * 2))
     }
 
     case class A(fooB: B)
