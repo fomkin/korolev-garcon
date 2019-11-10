@@ -7,7 +7,8 @@ import scala.collection.mutable
 
 class FakeAccess[S](initialState: S) extends korolev.Context.BaseAccess[IO, S, Any] {
 
-  val states = mutable.Buffer[S](initialState)
+  val states: mutable.Buffer[S] =
+    mutable.Buffer[S](initialState)
 
   def state: IO[S] = IO.pure(states.last)
   def transition(f: Transition[S]): IO[Unit] =

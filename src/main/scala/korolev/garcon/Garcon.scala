@@ -1,5 +1,8 @@
 package korolev.garcon
 
+import scala.language.experimental.macros
+import scala.language.higherKinds
+
 trait Garcon[F[_], Q, +R, +E] {
   def serve(query: Q, modify: Demand[Q, R, E] => F[Unit]): F[Unit]
 }
@@ -10,7 +13,10 @@ object Garcon {
   import korolev.Async._
   import Entry.Request
 
-  def Extension[F[_] : Async, S, M](entries: Entry[F, S, _, _, _]*): Extension[F, S, M] =
+  /**
+   * Configure garcon in manual way.
+   */
+  def extension[F[_] : Async, S, M](entries: Entry[F, S, _, _, _]*): Extension[F, S, M] =
     korolev.Extension.pure[F, S, M] { access =>
       korolev.Extension.Handlers(
         onState = { state =>
@@ -26,6 +32,16 @@ object Garcon {
         }
       )
     }
+
+  /**
+   * Configure garcon automatically
+   * @tparam F
+   * @tparam S
+   * @tparam M
+   * @return
+   */
+  def extension[F[_], S, M]: Extension[F, S, M] =
+    macro DerivationMacros.extension[F, S, M]
 
   final case class Entry[F[_]: Async, S, Q, R, E](garcon: Garcon[F, Q, R, E],
                                                   view: S => Option[Demand[Q, R, E]],

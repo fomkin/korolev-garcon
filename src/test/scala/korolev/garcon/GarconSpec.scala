@@ -8,13 +8,18 @@ import korolev.catsEffectSupport.implicits._
 import org.specs2.matcher.MatchResult
 
 class GarconSpec extends Specification { def is = s2"""
-  This is a specification to check that Garcon
-  reset entries properly.
+  This is a specification to check that Garcon work properly.
 
     reset direct case class field          $resetDirectCaseClassField
     reset field in sealed trait hierarchy  $resetFieldInSealedTraitHierarchy
     produce only one transition to reset   $produceOnlyOneTransitionToReset
     shows error                            $showsError
+
+  Derived extensions should have same behavior
+
+    just case classes                $derivedCaseClasses
+    one level branched hierarchy     $derivedOneLevelHierarchy
+    wto level branched hierarchy     $derivedTwoLevelHierarchy
   """
 
   import GarconSpec._
@@ -97,6 +102,60 @@ class GarconSpec extends Specification { def is = s2"""
     fakeAccess.states(2).user shouldEqual Demand.Error("99 not exists")
   }
 
+  lazy val derivedCaseClasses = {
+
+    import Auto._
+    import implicits._
+
+    val initialState = A(B(C(X.Y(M.L(0)), Demand.Start(7, None))))
+    val fakeAccess = new FakeAccess(initialState)
+
+    Garcon.extension[IO, Auto.A, Any]
+      .setup(fakeAccess)
+      .flatMap(hs => hs.onState(initialState))
+      .unsafeRunAsyncAndForget()
+
+    fakeAccess.states.length shouldEqual 2
+    fakeAccess.states(1).fooB.fooC.fooV shouldEqual Demand.Eventually(None)
+    fakeAccess.states(2).fooB.fooC.fooV shouldEqual Demand.Ready("7")
+  }
+
+  lazy val derivedOneLevelHierarchy = {
+
+    import Auto._
+    import implicits._
+
+    val initialState = A(B(C(X.Z(Demand.Start("wow", None)), Demand.Ready("7"))))
+    val fakeAccess = new FakeAccess(initialState)
+
+    Garcon.extension[IO, Auto.A, Any]
+      .setup(fakeAccess)
+      .flatMap(hs => hs.onState(initialState))
+      .unsafeRunAsyncAndForget()
+
+    fakeAccess.states.length shouldEqual 2
+    fakeAccess.states(1).fooB.fooC.fooX shouldEqual X.Z(Demand.Eventually(None))
+    fakeAccess.states(2).fooB.fooC.fooX shouldEqual X.Z(Demand.Ready("wow!"))
+  }
+
+  lazy val derivedTwoLevelHierarchy = {
+
+    import Auto._
+    import implicits._
+
+    val initialState = A(B(C(X.Y(M.N(Demand.Start(42, None))), Demand.Ready("7"))))
+    val fakeAccess = new FakeAccess(initialState)
+
+    Garcon.extension[IO, Auto.A, Any]
+      .setup(fakeAccess)
+      .flatMap(hs => hs.onState(initialState))
+      .unsafeRunAsyncAndForget()
+
+    fakeAccess.states.length shouldEqual 2
+    fakeAccess.states(1).fooB.fooC.fooX shouldEqual X.Y(M.N(Demand.Eventually(None)))
+    fakeAccess.states(2).fooB.fooC.fooX shouldEqual X.Y(M.N(Demand.Ready(84)))
+  }
+
 }
 
 object GarconSpec {
@@ -144,8 +203,43 @@ object GarconSpec {
       modify(Demand.Ready(query.map(users)))
   }
 
-  private[garcon] val extension = Garcon.Extension[IO, ApplicationState, Any](
+  private[garcon] val extension = Garcon.extension[IO, ApplicationState, Any](
     Garcon.Entry[IO, ApplicationState, Long, User, String](UserGarcon, userLens.getOption, (s, r) => userLens.set(r)(s)),
     Garcon.Entry[IO, ApplicationState, List[Long], List[User], String](UsersGarcon, friendsLens.getOption, (s, r) => friendsLens.set(r)(s))
   )
+
+  // Hierarchy for auto configuration
+
+  object Auto {
+
+    object implicits {
+      implicit val IntStringGarcon: Garcon[IO, Int, String, String] =
+        (query: Int, modify: Demand[Int, String, String] => IO[Unit]) =>
+          modify(Demand.Ready(query.toString))
+
+      implicit val StringStringGarcon: Garcon[IO, String, String, String] =
+        (query: String, modify: Demand[String, String, String] => IO[Unit]) =>
+          modify(Demand.Ready(query + "!"))
+
+      implicit val IntIntGarcon: Garcon[IO, Int, Int, String] =
+        (query: Int, modify: Demand[Int, Int, String] => IO[Unit]) =>
+          modify(Demand.Ready(query * 2))
+    }
+
+    case class A(fooB: B)
+    case class B(fooC: C)
+    case class C(fooX: X, fooV: Demand[Int, String, String])
+
+    sealed trait X
+    object X {
+      case class Y(barX: M) extends X
+      case class Z(barX: Demand[String, String, String]) extends X
+    }
+
+    sealed trait M
+    object M {
+      case class L(bazM: Int) extends M
+      case class N(bazM: Demand[Int, Int, String]) extends M
+    }
+  }
 }
