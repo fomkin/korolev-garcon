@@ -11,6 +11,8 @@ To make this app works, you should configure `StateLoader.forDeviceId`, which wi
 
 This obvious solution may lead to problems with user experience. What if DBMS on heavy load? What if request is not optimized well? What if we work with real word case where we need to make a hundreds of SQL-queries to show user a first screen? Until data is not loaded, user looks on a blank page. This is unacceptable.
 
+## How to use
+
 Garcon available in Maven Central. Garcon supports Scala 2.12 and 2.13 and Korolev 0.14.0 or higher. Add dependency to your project.
 
 ```scala
