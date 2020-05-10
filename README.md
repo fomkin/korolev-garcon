@@ -16,7 +16,7 @@ This obvious solution may lead to problems with user experience. What if DBMS on
 Garcon available in Maven Central. Garcon supports Scala 2.12 and 2.13 and Korolev 0.14.0 or higher. Add dependency to your project.
 
 ```scala
-libraryDependencies += "com.github.fomkin" %% "korolev-garcon" % "0.1.0"
+libraryDependencies += "com.github.fomkin" %% "korolev-garcon" % "0.2.0"
 ```
 
 This library offers [Demand](https://github.com/fomkin/korolev-garcon/blob/master/src/main/scala/korolev/garcon/Demand.scala) data type, [Garcon](https://github.com/fomkin/korolev-garcon/blob/master/src/main/scala/korolev/garcon/Garcon.scala) type class, and extension for Korolev which allows to manage data asynchronously.

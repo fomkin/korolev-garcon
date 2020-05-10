@@ -105,7 +105,7 @@ private[garcon] class DerivationMacros(val c: blackbox.Context) {
               scan(Path.SealedTrait(tpe, TermName(name)) :: path, tpe)
             } else {
               // TODO add support for branchy hierarchy
-              c.abort(symbol.pos, "Branchy hierarchy is not supported")
+              c.abort(c.enclosingPosition.pos, "Branchy hierarchy is not supported")
             }
           }
         } else {
@@ -116,7 +116,12 @@ private[garcon] class DerivationMacros(val c: blackbox.Context) {
       }
     }
 
-    val entries = scan(Nil, weakTypeOf[S])
+    if (!isCaseClass(s.tpe.typeSymbol))
+      c.abort(
+        c.enclosingPosition.pos,
+        s"Case class expected but ${s.tpe} given"
+      )
+    val entries = scan(Nil, s.tpe)
     q"korolev.garcon.Garcon.extension(..$entries)"
   }
 

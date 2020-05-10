@@ -25,14 +25,15 @@ trait Garcon[F[_], Q, +R, +E] {
 
 object Garcon {
 
-  import korolev.{Async, Extension}
-  import korolev.Async._
+  import korolev.effect.Effect
+  import korolev.Extension
+  import korolev.effect.syntax._
   import Entry.Request
 
   /**
    * Configure garcon in manual way.
    */
-  def extension[F[_] : Async, S, M](entries: Entry[F, S, _, _, _]*): Extension[F, S, M] =
+  def extension[F[_]: Effect, S, M](entries: Entry[F, S, _, _, _]*): Extension[F, S, M] =
     korolev.Extension.pure[F, S, M] { access =>
       korolev.Extension.Handlers(
         onState = { state =>
@@ -40,10 +41,10 @@ object Garcon {
           if (rqs.nonEmpty) {
             for {
               _ <- access.transition(s => rqs.foldLeft(s)((a, r) => r.reset(a)))
-              _ <- Async[F].sequence(rqs.map(_.serve()))
+              _ <- Effect[F].sequence(rqs.map(_.serve()))
             } yield ()
           } else {
-            Async[F].unit
+            Effect[F].unit
           }
         }
       )
@@ -59,9 +60,9 @@ object Garcon {
   def extension[F[_], S, M]: Extension[F, S, M] =
     macro DerivationMacros.extension[F, S, M]
 
-  final case class Entry[F[_]: Async, S, Q, R, E](garcon: Garcon[F, Q, R, E],
-                                                  view: S => Option[Demand[Q, R, E]],
-                                                  modify: (S, Demand[Q, R, E]) => S) {
+  final case class Entry[F[_]: Effect, S, Q, R, E](garcon: Garcon[F, Q, R, E],
+                                                   view: S => Option[Demand[Q, R, E]],
+                                                   modify: (S, Demand[Q, R, E]) => S) {
 
     def request(state: S, transition: (S => S) => F[Unit]): Option[Request[F, S]] = view(state) match {
       case Some(Demand.Start(q, p)) =>

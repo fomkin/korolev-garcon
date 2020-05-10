@@ -4,7 +4,7 @@ import cats.effect.IO
 import org.specs2._
 import monocle.macros.GenPrism
 import monocle.macros.GenLens
-import korolev.catsEffectSupport.implicits._
+import korolev.cats._
 import org.specs2.matcher.MatchResult
 
 class GarconSpec extends Specification { def is = s2"""
@@ -19,7 +19,7 @@ class GarconSpec extends Specification { def is = s2"""
 
     just case classes                $derivedCaseClasses
     one level branched hierarchy     $derivedOneLevelHierarchy
-    wto level branched hierarchy     $derivedTwoLevelHierarchy
+    two level branched hierarchy     $derivedTwoLevelHierarchy
   """
 
   import GarconSpec._
