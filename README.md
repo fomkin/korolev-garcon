@@ -44,7 +44,7 @@ implicit val userGarcon: Garcon[Future, String, User, Throwable] =
    .flatMap(user => modify(Demand.Ready(user)))
    .recover(e => modify(Demand.Error(e)))
 
-implicit val frienListGarcon: Garcon[Future, String, FriendList, Throwable] =
+implicit val friendListGarcon: Garcon[Future, String, FriendList, Throwable] =
   (id, modify) => sql"select from friends left join user on friends.of = user.id where friends.of = $id"
    .list[User]
    .run
@@ -77,15 +77,17 @@ KorolevServiceConfig[Future, ApplicationState, Any](
     )
   },
   render = { state =>
-    body(
-      state.user match {
-        case Demand.Ready(user) => div(s"User: ${user.email}")
-        case _ => div("Loading user")
-      }, 
-      state.friends match {
-        case Demand.Ready(FriendList(xs)) => ul(xs.map(x => li(x.email)))
-        case _ => div("Loading friend list")
-      }
+    Html(
+      body(
+        state.user match {
+          case Demand.Ready(user) => div(s"User: ${user.email}")
+          case _ => div("Loading user")
+        },
+        state.friends match {
+          case Demand.Ready(FriendList(xs)) => ul(xs.map(x => li(x.email)))
+          case _ => div("Loading friend list")
+        }
+      )
     )
   }
 )
